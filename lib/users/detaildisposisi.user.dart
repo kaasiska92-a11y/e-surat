@@ -17,6 +17,10 @@ class DetailDisposisiUser extends StatefulWidget {
     required asal,
     required perihal,
     required tanggal,
+    required String tanggalPenerimaan,
+    required String jabatanUser,
+    required String namaUser,
+    required String tanggalSurat,
   });
 
   @override
@@ -26,7 +30,8 @@ class DetailDisposisiUser extends StatefulWidget {
 class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
   String? jabatan;
   String? nama;
-  String? pesan;
+  String? catatan;
+  bool sudahDisposisi = false; // <-- Tambahan utama
 
   @override
   void initState() {
@@ -34,6 +39,7 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
     _getDisposisiData();
   }
 
+  // 🔹 Ambil data disposisi berdasarkan nomor surat
   Future<void> _getDisposisiData() async {
     try {
       final disposisiQuery =
@@ -47,21 +53,23 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
         setState(() {
           nama = disposisiData['nama'] ?? '-';
           jabatan = disposisiData['jabatan'] ?? '-';
-          pesan = disposisiData['pesan'] ?? 'Belum ada pesan disposisi';
+          catatan = disposisiData['catatan'] ?? 'Belum ada catatan disposisi';
+          sudahDisposisi = true; // <-- SUDAH DISPOSISI
         });
       } else {
         setState(() {
           nama = '-';
           jabatan = '-';
-          pesan = 'Belum ada pesan disposisi';
+          catatan = 'Belum ada catatan disposisi';
+          sudahDisposisi = false; // <-- BELUM DISPOSISI
         });
       }
     } catch (e) {
-      debugPrint('❌ Error ambil data disposisi: $e');
+      debugPrint("❌ Error ambil data disposisi: $e");
     }
   }
 
-  // Fungsi diganti sesuai permintaan Anda
+  // 🔹 Fungsi membuka file
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -79,7 +87,6 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
       appBar: AppBar(
         backgroundColor: Colors.blue.shade700,
         elevation: 2,
-        shadowColor: Colors.black26,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -96,14 +103,18 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
           ),
         ),
         centerTitle: true,
+
+        // 🔹 Button untuk membuat disposisi
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.airplanemode_active_rounded,
-              color: Colors.white,
+            icon: Icon(
+              Icons.mark_unread_chat_alt_rounded, // ikon formulir disposisi
+              color: sudahDisposisi ? Colors.grey.shade300 : Colors.white,
               size: 26,
             ),
             tooltip: "Buat Disposisi",
+
+            // 🔒 Sekarang selalu bisa diklik
             onPressed: () {
               Navigator.push(
                 context,
@@ -119,25 +130,23 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
                         docId: widget.docId,
                         uidUser: '',
                       ),
-                  transitionsBuilder: (
-                    context,
-                    animation,
-                    secondaryAnimation,
-                    child,
-                  ) {
+                  transitionsBuilder: (context, animation, secondary, child) {
                     const begin = Offset(1.0, 0.0);
                     const end = Offset.zero;
                     final tween = Tween(
                       begin: begin,
                       end: end,
                     ).chain(CurveTween(curve: Curves.easeInOut));
+
                     return SlideTransition(
                       position: animation.drive(tween),
                       child: child,
                     );
                   },
                 ),
-              );
+              ).then(
+                (_) => _getDisposisiData(),
+              ); // <-- Update data setelah kembali dari form
             },
           ),
         ],
@@ -287,7 +296,7 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          pesan ?? "Belum ada pesan disposisi",
+                          catatan ?? "Belum ada catatan disposisi",
                           style: GoogleFonts.poppins(
                             color: Colors.grey,
                             fontStyle: FontStyle.italic,

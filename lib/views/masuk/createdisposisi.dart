@@ -9,6 +9,8 @@ class BuatDisposisiPage extends StatefulWidget {
     super.key,
     required this.noSurat,
     required String idSurat,
+    required String namaSurat,
+    required String jabatanSurat,
   });
 
   @override
@@ -159,7 +161,7 @@ class _BuatDisposisiPageState extends State<BuatDisposisiPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFE3F2FD),
       appBar: AppBar(
         backgroundColor: Colors.blue,
         iconTheme: const IconThemeData(color: Colors.white),

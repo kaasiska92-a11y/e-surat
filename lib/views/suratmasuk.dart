@@ -20,14 +20,19 @@ class _SuratMasukState extends State<SuratMasuk> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          _buildSearchBar(),
-          const SizedBox(height: 8),
-          Expanded(child: _buildSemuaSurat()),
-        ],
+
+      // 🔥 HANYA TAMBAH INI (SafeArea)
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            _buildSearchBar(),
+            const SizedBox(height: 8),
+            Expanded(child: _buildSemuaSurat()),
+          ],
+        ),
       ),
+
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue.shade600,
         onPressed: () async {
@@ -120,7 +125,6 @@ class _SuratMasukState extends State<SuratMasuk> {
           return const Center(child: Text("Belum ada surat masuk"));
         }
 
-        // 🔍 Filter pencarian
         final docs =
             snapshot.data!.docs.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
@@ -235,7 +239,6 @@ class _SuratMasukState extends State<SuratMasuk> {
                           ),
                           onPressed: () {
                             Uri uri = Uri.parse(fileUrl);
-                            // bisa dibuka di WebView atau browser
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text("Membuka: ${uri.toString()}"),
@@ -246,7 +249,7 @@ class _SuratMasukState extends State<SuratMasuk> {
 
                       const SizedBox(height: 4),
 
-                      // 🔹 Status Disposisi & Baca
+                      // 🔹 Status
                       Row(
                         children: [
                           _statusChip(
@@ -350,6 +353,7 @@ class _SuratMasukState extends State<SuratMasuk> {
                             ],
                           ),
                     );
+
                     if (confirm == true) {
                       await surat.reference.delete();
                       ScaffoldMessenger.of(context).showSnackBar(

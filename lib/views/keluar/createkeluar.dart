@@ -127,7 +127,7 @@ class _TambahSuratKeluarState extends State<TambahSuratKeluar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFE3F2FD),
       appBar: AppBar(
         backgroundColor: Colors.blue,
         title: Text(

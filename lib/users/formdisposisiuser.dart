@@ -18,7 +18,9 @@ class FormDisposisiUser extends StatefulWidget {
     required this.noSurat,
     required this.nomorSurat,
     required this.asalSurat,
-    required this.perihal, required String uidUser,
+    required this.perihal,
+    required String
+    uidUser, // Note: Parameter ini tidak digunakan di kode, tapi tetap disertakan sesuai asli
   });
 
   @override
@@ -63,6 +65,11 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
   }
 
   Future<void> _kirimDisposisi() async {
+    // Tambahkan logging untuk debug
+    print(
+      'Attempting to send disposisi. Tindakan: $tindakanSelanjutnya, Penerima: $penerimaId',
+    );
+
     if (catatanController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Isi pesan disposisi terlebih dahulu!")),
@@ -97,6 +104,7 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
           'sudahDisposisi': false,
         });
 
+        print('Disposisi forwarded successfully.');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Disposisi berhasil diteruskan")),
         );
@@ -106,6 +114,7 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
             .doc(widget.docId)
             .update({'sudahDisposisi': true, 'updated_at': Timestamp.now()});
 
+        print('Disposisi marked as completed.');
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("Disposisi selesai")));
@@ -113,6 +122,7 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
 
       Navigator.pop(context, true);
     } catch (e) {
+      print('Error sending disposisi: $e'); // Logging error
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Gagal mengirim disposisi: $e")));
@@ -127,6 +137,11 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: Colors.blue.shade700,
+        leading: IconButton(
+          // Tambahkan ikon kembali (jika ini "logo" yang dimaksud)
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           "Disposisi Surat",
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
@@ -218,6 +233,14 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
                       snapshot.data!.docs
                           .where((d) => d.id != currentUserId)
                           .toList();
+
+                  // Tambahkan penanganan jika users kosong
+                  if (users.isEmpty) {
+                    return Text(
+                      "Tidak ada penerima tersedia. Tambahkan user lain dengan role 'user'.",
+                      style: GoogleFonts.poppins(color: Colors.red),
+                    );
+                  }
 
                   return DropdownButtonFormField<String>(
                     value: penerimaId,

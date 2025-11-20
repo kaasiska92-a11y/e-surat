@@ -18,14 +18,17 @@ class _SuratKeluarState extends State<SuratKeluar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD), // 🌤️ Biru soft (#E3F2FD)
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          _buildSearchBar(),
-          const SizedBox(height: 12),
-          Expanded(child: _buildSuratList()),
-        ],
+      backgroundColor: const Color(0xFFE3F2FD),
+      body: SafeArea(
+        // ✅ Supaya tidak mentok atas
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            _buildSearchBar(),
+            const SizedBox(height: 12),
+            Expanded(child: _buildSuratList()),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue.shade700,
@@ -44,21 +47,22 @@ class _SuratKeluarState extends State<SuratKeluar> {
     );
   }
 
-  // 🔹 SEARCH BAR
+  // 🔹 SEARCH BAR (disamakan style dengan surat masuk & disposisi)
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
+              color: Colors.blue.withOpacity(0.12),
+              blurRadius: 12,
               offset: const Offset(0, 3),
             ),
           ],
+          borderRadius: BorderRadius.circular(30),
         ),
         child: TextField(
           controller: searchController,
@@ -67,7 +71,9 @@ class _SuratKeluarState extends State<SuratKeluar> {
           decoration: InputDecoration(
             hintText: "Cari surat berdasarkan nomor, tujuan, atau perihal...",
             hintStyle: GoogleFonts.poppins(color: Colors.grey.shade500),
-            prefixIcon: const Icon(Icons.search, color: Colors.blue),
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: const Icon(Icons.search_rounded, color: Colors.blue),
             suffixIcon:
                 searchQuery.isNotEmpty
                     ? IconButton(
@@ -78,8 +84,18 @@ class _SuratKeluarState extends State<SuratKeluar> {
                       },
                     )
                     : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: BorderSide(color: Colors.blue.shade100, width: 1.2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30),
+              borderSide: const BorderSide(color: Colors.blue, width: 1.8),
+            ),
           ),
         ),
       ),

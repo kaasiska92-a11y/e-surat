@@ -18,13 +18,17 @@ class _DisposisiSuratMasukState extends State<DisposisiSuratMasuk> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFE3F2FD),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          _buildSearchBar(),
-          const SizedBox(height: 8),
-          Expanded(child: _buildDisposisiList()),
-        ],
+
+      // 🔥 Tambahkan SafeArea AGAR SEARCH BAR TIDAK MELEKAT KE ATAS
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            _buildSearchBar(),
+            const SizedBox(height: 8),
+            Expanded(child: _buildDisposisiList()),
+          ],
+        ),
       ),
     );
   }
@@ -106,12 +110,12 @@ class _DisposisiSuratMasukState extends State<DisposisiSuratMasuk> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // 🔍 Filter: Hanya tampilkan yang sudah disposisi, lalu filter pencarian
+        // 🔍 Filter: hanya yang sudah disposisi dan sesuai pencarian
         final docs =
             snapshot.data!.docs.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
               final sudahDisposisi = data['sudahDisposisi'] ?? false;
-              if (!sudahDisposisi) return false; // Hanya yang sudah disposisi
+              if (!sudahDisposisi) return false;
 
               final query = searchQuery.toLowerCase();
               return (data['nomor'] ?? '').toString().toLowerCase().contains(
@@ -141,9 +145,51 @@ class _DisposisiSuratMasukState extends State<DisposisiSuratMasuk> {
       },
     );
   }
+
+  // 🔹 Fungsi buat disposisi baru
+  Future<void> buatDisposisi({
+    required String nomorSurat,
+    required String penerimaNama,
+    required String penerimaJabatan,
+    required String penerimaUid,
+  }) async {
+    try {
+      final disposisiRef = FirebaseFirestore.instance.collection('disposisi');
+
+      await disposisiRef.add({
+        'nomor': nomorSurat,
+        'penerima_nama': penerimaNama,
+        'penerima_jabatan': penerimaJabatan,
+        'penerima_uid': penerimaUid,
+        'created_at': FieldValue.serverTimestamp(),
+        'status': 'baru',
+      });
+
+      final suratRef = FirebaseFirestore.instance.collection('surat_masuk');
+      final query = await suratRef.where('nomor', isEqualTo: nomorSurat).get();
+
+      for (var doc in query.docs) {
+        await doc.reference.update({'sudahDisposisi': true});
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Disposisi berhasil dibuat untuk $penerimaNama"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Gagal membuat disposisi: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }
 
-// 🔹 Card disposisi dengan titik tiga hapus
+// 🔹 CARD DISPOSISI
 class _DisposisiCard extends StatelessWidget {
   final String docId;
   final Map<String, dynamic> data;
@@ -187,7 +233,6 @@ class _DisposisiCard extends StatelessWidget {
 
     if (confirm == true) {
       try {
-        // Hapus semua disposisi terkait nomor surat ini dari collection 'disposisi'
         final disposisiQuery =
             await FirebaseFirestore.instance
                 .collection('disposisi')
@@ -198,7 +243,6 @@ class _DisposisiCard extends StatelessWidget {
           await doc.reference.delete();
         }
 
-        // Update surat_masuk ke belum disposisi
         await FirebaseFirestore.instance
             .collection('surat_masuk')
             .doc(docId)
@@ -241,12 +285,6 @@ class _DisposisiCard extends StatelessWidget {
           InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () {
-              if (!sudahDibaca) {
-                FirebaseFirestore.instance
-                    .collection('surat_masuk')
-                    .doc(docId)
-                    .update({'sudahDibaca': true});
-              }
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -259,7 +297,6 @@ class _DisposisiCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🔹 Nomor & Menu Titik Tiga
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -329,7 +366,7 @@ class _DisposisiCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  // Status disposisi
+
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -356,11 +393,11 @@ class _DisposisiCard extends StatelessWidget {
               ),
             ),
           ),
-          // Label merah "Baru"
+
           if (!sudahDibaca)
             Positioned(
               top: 8,
-              right: 60, // kasih jarak biar gak tabrakan sama titik tiga
+              right: 60,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(

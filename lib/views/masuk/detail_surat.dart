@@ -233,6 +233,8 @@ class DetailSurat extends StatelessWidget {
                                       (_) => BuatDisposisiPage(
                                         noSurat: surat.nomor,
                                         idSurat: '',
+                                        namaSurat: '',
+                                        jabatanSurat: '',
                                       ),
                                 ),
                               );
