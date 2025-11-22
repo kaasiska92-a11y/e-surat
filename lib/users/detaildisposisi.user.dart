@@ -31,7 +31,7 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
   String? jabatan;
   String? nama;
   String? catatan;
-  bool sudahDisposisi = false; 
+  bool sudahDisposisi = false;
 
   @override
   void initState() {
@@ -41,26 +41,31 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
 
   Future<void> _getDisposisiData() async {
     try {
-      final disposisiQuery =
+      // Ambil dokumen disposisi berdasarkan ID (karena Anda sudah menyamakan ID disposisi == ID surat masuk)
+      final docSnap =
           await FirebaseFirestore.instance
               .collection('disposisi')
-              .where('nomor', isEqualTo: widget.data['nomor'])
+              .doc(widget.docId)
               .get();
 
-      if (disposisiQuery.docs.isNotEmpty) {
-        final disposisiData = disposisiQuery.docs.first.data();
+      if (docSnap.exists) {
+        final disposisiData = docSnap.data()!;
         setState(() {
-          nama = disposisiData['nama'] ?? '-';
-          jabatan = disposisiData['jabatan'] ?? '-';
+          nama = disposisiData['nama'] ?? disposisiData['penerima_nama'] ?? '-';
+          jabatan =
+              disposisiData['jabatan'] ??
+              disposisiData['penerima_jabatan'] ??
+              '-';
           catatan = disposisiData['catatan'] ?? 'Belum ada catatan disposisi';
-          sudahDisposisi = true; // <-- SUDAH DISPOSISI
+          sudahDisposisi = true;
         });
       } else {
+        // belum ada disposisi untuk surat ini
         setState(() {
           nama = '-';
           jabatan = '-';
           catatan = 'Belum ada catatan disposisi';
-          sudahDisposisi = false; // <-- BELUM DISPOSISI
+          sudahDisposisi = false;
         });
       }
     } catch (e) {
@@ -115,18 +120,26 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
 
             // 🔒 Sekarang selalu bisa diklik
             onPressed: () {
+              // debug: cetak dulu agar yakin docId yang dipakai benar
+              debugPrint(
+                "Navigasi ke FormDisposisiUser dengan docId (surat/disposisi): ${widget.docId}",
+              );
+
               Navigator.push(
                 context,
                 PageRouteBuilder(
                   transitionDuration: const Duration(milliseconds: 400),
                   pageBuilder:
                       (_, __, ___) => FormDisposisiUser(
-                        data: data,
+                        docId:
+                            widget
+                                .docId, // <-- PENTING: kirim ID surat_masuk (sama dengan id disposisi)
+                        data: data, // data yang Anda punya (opsional)
                         noSurat: data['no_urut']?.toString() ?? '',
                         nomorSurat: data['nomor'] ?? '',
                         asalSurat: data['asal'] ?? '',
                         perihal: data['perihal'] ?? '',
-                        docId: widget.docId,
+                        // hapus atau isi uidUser jika diperlukan oleh constructor
                         uidUser: '',
                       ),
                   transitionsBuilder: (context, animation, secondary, child) {
@@ -136,16 +149,13 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
                       begin: begin,
                       end: end,
                     ).chain(CurveTween(curve: Curves.easeInOut));
-
                     return SlideTransition(
                       position: animation.drive(tween),
                       child: child,
                     );
                   },
                 ),
-              ).then(
-                (_) => _getDisposisiData(),
-              ); // <-- Update data setelah kembali dari form
+              ).then((_) => _getDisposisiData());
             },
           ),
         ],
@@ -257,56 +267,96 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
               Icons.history_toggle_off_rounded,
               "Riwayat Disposisi",
             ),
-            _animatedCard(
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.account_circle_outlined,
-                        color: Colors.blue.shade700,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "$jabatan - $nama",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const Divider(
-                    height: 14,
-                    thickness: 0.5,
-                    color: Colors.black12,
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.edit_note_outlined,
+            const SizedBox(height: 12),
+
+            // 🔹 List Riwayat Subcollection
+            StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection("disposisi")
+                      .doc(widget.docId)
+                      .collection("riwayat")
+                      .orderBy("timestamp", descending: false)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      "Belum ada riwayat disposisi lainnya.",
+                      style: GoogleFonts.poppins(
+                        fontStyle: FontStyle.italic,
                         color: Colors.grey,
-                        size: 20,
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          catatan ?? "Belum ada catatan disposisi",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 13,
+                    ),
+                  );
+                }
+
+                return Column(
+                  children:
+                      snapshot.data!.docs.map((doc) {
+                        final riwayat = doc.data() as Map<String, dynamic>;
+
+                        return _animatedCard(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.person,
+                                    color: Colors.blue,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "${riwayat['jabatan'] ?? '-'} - ${riwayat['nama'] ?? '-'}",
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                riwayat['catatan'] ?? '-',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Tindakan: ${riwayat['tindakan_selanjutnya'] ?? '-'}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Waktu: ${riwayat['timestamp'] != null ? riwayat['timestamp'].toDate() : '-'}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        );
+                      }).toList(),
+                );
+              },
             ),
           ],
         ),

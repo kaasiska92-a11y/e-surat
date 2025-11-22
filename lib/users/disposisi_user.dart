@@ -94,7 +94,7 @@ class _DisposisiUserState extends State<DisposisiUser> {
         children: [
           _tabButton("Antrian", showAntrian),
           const SizedBox(width: 10),
-          _tabButton("History", !showAntrian),
+          _tabButton("History", showAntrian),
         ],
       ),
     );

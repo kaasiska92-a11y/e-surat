@@ -102,33 +102,44 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
   setState(() => loading = true);
 
   try {
-    // 1️⃣ SIMPAN DATA DISPOSISI UTAMA
-    DocumentReference dispoRef =
-        await FirebaseFirestore.instance.collection('disposisi').add({
-      'surat_masuk_id': widget.docId,
+    // 1️⃣ Ambil dokumen disposisi berdasar ID SURAT (ID yang sama!)
+    final docRef = FirebaseFirestore.instance
+        .collection('disposisi')
+        .doc(widget.docId);
+
+    final existing = await docRef.get();
+
+    if (!existing.exists) {
+      throw "Dokumen disposisi tidak ditemukan!";
+    }
+
+    // 2️⃣ Update dokumen disposisi
+    await docRef.update({
       'pengirim_uid': currentUserId,
       'nama': namaUser,
       'jabatan': jabatanUser,
       'penerima_uid': penerimaId,
+      'penerima_nama': penerimaNama,
+      'penerima_jabatan': penerimaJabatan,
       'catatan': catatanController.text,
       'tindakan_selanjutnya': tindakanSelanjutnya,
-      'created_at': Timestamp.now(),
-      'sudahDibaca': false,
+      'updated_at': Timestamp.now(),
       'sudahDisposisi': true,
     });
 
-    // 2️⃣ SIMPAN KE SUBCOLLECTION RIWAYAT
-    await dispoRef.collection('riwayat').add({
+    // 3️⃣ Tambahkan ke riwayat
+    await docRef.collection('riwayat').add({
       'pengirim_uid': currentUserId,
       'nama': namaUser,
       'jabatan': jabatanUser,
       'penerima_uid': penerimaId,
+      'penerima_nama': penerimaNama,
+      'penerima_jabatan': penerimaJabatan,
       'catatan': catatanController.text,
       'tindakan_selanjutnya': tindakanSelanjutnya,
       'timestamp': Timestamp.now(),
     });
 
-    // Pesan sukses
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Disposisi berhasil dikirim")),
     );
@@ -137,6 +148,9 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
       sudahDisposisi = true;
       loading = false;
     });
+
+    Navigator.pop(context);
+
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("Gagal mengirim disposisi: $e")),
@@ -144,7 +158,6 @@ class _FormDisposisiUserState extends State<FormDisposisiUser> {
     setState(() => loading = false);
   }
 }
-
 
   @override
   Widget build(BuildContext context) {

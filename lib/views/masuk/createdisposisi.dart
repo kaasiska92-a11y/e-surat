@@ -86,77 +86,70 @@ class _BuatDisposisiPageState extends State<BuatDisposisiPage> {
 
   /// Simpan disposisi
   Future<void> _simpanDisposisi() async {
-    if (penerima == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Harap pilih penerima!")));
+  if (penerima == null) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Harap pilih penerima!")));
+    return;
+  }
+
+  setState(() => loading = true);
+
+  try {
+    // Ambil surat berdasarkan nomor
+    final suratQuery = await FirebaseFirestore.instance
+        .collection('surat_masuk')
+        .where('nomor', isEqualTo: widget.noSurat)
+        .limit(1)
+        .get();
+
+    if (suratQuery.docs.isEmpty) {
+      throw "Surat tidak ditemukan!";
+    }
+
+    // Id surat_masuk
+    final suratId = suratQuery.docs.first.id;
+
+    // Referensi disposisi dengan ID YANG SAMA
+    final disposisiRef =
+        FirebaseFirestore.instance.collection('disposisi').doc(suratId);
+
+    // Cek apakah disposisi sudah ada
+    final cek = await disposisiRef.get();
+    if (cek.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Surat ini sudah didisposisi.")),
+      );
+      setState(() => loading = false);
       return;
     }
 
-    setState(() => loading = true);
+    // Buat disposisi baru
+    await disposisiRef.set({
+      'nomor': widget.noSurat,
+      'penerima_uid': penerima!['uid'],
+      'nama': penerima!['nama'],
+      'jabatan': penerima!['jabatan'],
+      'created_at': Timestamp.now(),
+      'sudahDisposisi': false,
+    });
 
-    try {
-      final disposisiCol = FirebaseFirestore.instance.collection('disposisi');
-      final suratCol = FirebaseFirestore.instance.collection('surat_masuk');
+    // Update status surat_masuk
+    await suratQuery.docs.first.reference.update({
+      'sudahDisposisi': true,
+    });
 
-      // Cek apakah surat sudah didisposisi
-      final existingDisposisiSnapshot =
-          await disposisiCol
-              .where('nomor', isEqualTo: widget.noSurat)
-              .limit(1)
-              .get();
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text("Disposisi berhasil dibuat!")));
 
-      if (existingDisposisiSnapshot.docs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Surat ini sudah didisposisi, tidak bisa diteruskan lagi.",
-            ),
-          ),
-        );
-        setState(() => loading = false);
-        return;
-      }
-
-      // Simpan disposisi baru
-      await disposisiCol.add({
-        'nomor': widget.noSurat,
-        'penerima_uid': penerima!['uid'],
-        'nama': penerima!['nama'],
-        'jabatan': penerima!['jabatan'],
-        'created_at': FieldValue.serverTimestamp(),
-      });
-
-      // Update status surat_masuk supaya menandai sudah disposisi
-      final suratQuery =
-          await suratCol
-              .where('nomor', isEqualTo: widget.noSurat)
-              .limit(1)
-              .get();
-
-      if (suratQuery.docs.isNotEmpty) {
-        final docRef = suratQuery.docs.first.reference;
-        await docRef.update({'sudahDisposisi': true});
-      }
-
-      setState(() {
-        sudahDidisposisi = true;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Disposisi berhasil dikirim!")),
-      );
-
-      Navigator.pop(context);
-    } catch (e) {
-      print('Error saving disposisi: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Gagal menyimpan disposisi: $e")));
-    } finally {
-      setState(() => loading = false);
-    }
+    Navigator.pop(context);
+  } catch (e) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text("Gagal menyimpan disposisi: $e")));
   }
+
+  setState(() => loading = false);
+}
+
 
   @override
   Widget build(BuildContext context) {

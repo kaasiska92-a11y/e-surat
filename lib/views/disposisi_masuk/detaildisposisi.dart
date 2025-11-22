@@ -175,61 +175,100 @@ class _DetailDisposisiState extends State<DetailDisposisi> {
             ),
             const SizedBox(height: 20),
 
-            // 🔹 Bagian Riwayat Disposisi
             _sectionTitle(
               Icons.history_toggle_off_rounded,
               "Riwayat Disposisi",
             ),
-            _animatedCard(
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.account_circle_outlined,
-                        color: Colors.blue.shade700,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "$jabatan - $nama",
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const Divider(
-                    height: 14,
-                    thickness: 0.5,
-                    color: Colors.black12,
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.edit_note_outlined,
+            const SizedBox(height: 12),
+
+            // 🔹 List Riwayat Subcollection
+            StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection("disposisi")
+                      .doc(widget.docId)
+                      .collection("riwayat")
+                      .orderBy("timestamp", descending: false)
+                      .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Text(
+                      "Belum ada riwayat disposisi lainnya.",
+                      style: GoogleFonts.poppins(
+                        fontStyle: FontStyle.italic,
                         color: Colors.grey,
-                        size: 20,
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          pesan ?? "Belum ada pesan disposisi",
-                          style: GoogleFonts.poppins(
-                            color: Colors.grey,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 13,
+                    ),
+                  );
+                }
+
+                return Column(
+                  children:
+                      snapshot.data!.docs.map((doc) {
+                        final riwayat = doc.data() as Map<String, dynamic>;
+
+                        return _animatedCard(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.person,
+                                    color: Colors.blue,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "${riwayat['jabatan'] ?? '-'} - ${riwayat['nama'] ?? '-'}",
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                riwayat['catatan'] ?? '-',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Tindakan: ${riwayat['tindakan_selanjutnya'] ?? '-'}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                "Waktu: ${riwayat['timestamp'] != null ? riwayat['timestamp'].toDate() : '-'}",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                        );
+                      }).toList(),
+                );
+              },
             ),
           ],
         ),
