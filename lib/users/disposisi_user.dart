@@ -215,8 +215,6 @@ class _DisposisiUserState extends State<DisposisiUser> {
                   asal: mergedData['asal'] ?? '-',
                   perihal: mergedData['perihal'] ?? '-',
                   tanggal: mergedData['tanggal_penerimaan'] ?? '-',
-                  namaTujuan: mergedData['nama'] ?? '-',
-                  jabatanTujuan: mergedData['jabatan'] ?? '-',
                 );
               },
             );
@@ -227,7 +225,7 @@ class _DisposisiUserState extends State<DisposisiUser> {
   }
 }
 
-// Card Disposisi User (UI sama seperti kode awal)
+/// Card Disposisi User (Tampilan rapi tanpa ikon)
 class _DisposisiCardUser extends StatelessWidget {
   final String docId;
   final Map<String, dynamic> data;
@@ -236,8 +234,6 @@ class _DisposisiCardUser extends StatelessWidget {
   final String asal;
   final String perihal;
   final String tanggal;
-  final String namaTujuan;
-  final String jabatanTujuan;
 
   const _DisposisiCardUser({
     required this.docId,
@@ -247,69 +243,19 @@ class _DisposisiCardUser extends StatelessWidget {
     required this.asal,
     required this.perihal,
     required this.tanggal,
-    required this.namaTujuan,
-    required this.jabatanTujuan,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 3,
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(vertical: 8),
+      shadowColor: Colors.black26,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: nomor + titik 3
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "$noUrut. $nomor",
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                asal,
-                style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                perihal,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.grey[800],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                "Tanggal Penerimaan: $tanggal",
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "Tujuan: $namaTujuan ($jabatanTujuan)",
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[800],
-                ),
-              ),
-            ],
-          ),
-        ),
+        splashColor: Colors.blue.withOpacity(0.1),
         onTap: () {
           Navigator.push(
             context,
@@ -331,6 +277,53 @@ class _DisposisiCardUser extends StatelessWidget {
             ),
           );
         },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: nomor surat
+              Text(
+                "$noUrut. $nomor",
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.blue.shade700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              // Asal surat
+              Text(
+                asal,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Perihal surat
+              Text(
+                perihal,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Tanggal penerimaan
+              Text(
+                "Diterima: $tanggal",
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

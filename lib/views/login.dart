@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage>
   bool isLoading = false;
   bool rememberMe = false;
   bool _isPasswordVisible = false;
+
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
@@ -37,23 +38,41 @@ class _LoginPageState extends State<LoginPage>
     _controller.forward();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   void loginUser() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email dan password wajib diisi.")),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
       final snapshot =
           await FirebaseFirestore.instance
               .collection('users')
-              .where('email', isEqualTo: emailController.text.trim())
-              .where('password', isEqualTo: passwordController.text.trim())
+              .where('email', isEqualTo: email)
+              .where('password', isEqualTo: password)
               .limit(1)
               .get();
 
       if (snapshot.docs.isNotEmpty) {
         final user = snapshot.docs.first.data();
-        final nama = user['nama'];
-        final jabatan = user['jabatan'];
-        final role = user['role'];
+        final nama = user['nama'] ?? "No Name";
+        final jabatan = user['jabatan'] ?? "No Jabatan";
+        final role = user['role'] ?? "user";
 
         if (role == 'user') {
           Navigator.pushReplacement(
@@ -72,6 +91,10 @@ class _LoginPageState extends State<LoginPage>
                   (context) => MainPage(namaUser: nama, jabatanUser: jabatan),
             ),
           );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text("Role tidak dikenali.")));
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,21 +115,18 @@ class _LoginPageState extends State<LoginPage>
     return Scaffold(
       body: Stack(
         children: [
-          // 🌊 Background biru gradasi
+          // Background gradasi biru
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF2196F3), // biru muda
-                  Color(0xFF0D47A1), // biru tua
-                ],
+                colors: [Color(0xFF2196F3), Color(0xFF0D47A1)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
           ),
 
-          // 💧 Bubble lembut
+          // Bubble efek
           Positioned(
             top: -80,
             left: -60,
@@ -132,13 +152,13 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
 
-          // ✨ Efek blur kaca
+          // Efek blur kaca
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
             child: Container(color: Colors.black.withOpacity(0)),
           ),
 
-          // 💠 Konten utama
+          // Konten utama
           Center(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -164,7 +184,7 @@ class _LoginPageState extends State<LoginPage>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 🏛️ Logo
+                      // Logo
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: const BoxDecoration(
@@ -196,7 +216,7 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       const SizedBox(height: 30),
 
-                      // 📧 Email field
+                      // Email field
                       TextField(
                         controller: emailController,
                         cursorColor: Colors.white,
@@ -225,7 +245,7 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       const SizedBox(height: 16),
 
-                      // 🔒 Password field
+                      // Password field
                       TextField(
                         controller: passwordController,
                         obscureText: !_isPasswordVisible,
@@ -267,7 +287,7 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       const SizedBox(height: 10),
 
-                      // ✅ Remember Me + Reset Password
+                      // Remember Me + Ubah password
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -311,11 +331,11 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       const SizedBox(height: 25),
 
-                      // 🔵 Tombol Login
+                      // Tombol Login
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: rememberMe ? loginUser : null,
+                          onPressed: isLoading ? null : loginUser,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -323,14 +343,23 @@ class _LoginPageState extends State<LoginPage>
                               borderRadius: BorderRadius.circular(15),
                             ),
                           ),
-                          child: const Text(
-                            "Login",
-                            style: TextStyle(
-                              color: Color(0xFF1976D2),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child:
+                              isLoading
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Color(0xFF1976D2),
+                                    ),
+                                  )
+                                  : const Text(
+                                    "Login",
+                                    style: TextStyle(
+                                      color: Color(0xFF1976D2),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                         ),
                       ),
                     ],

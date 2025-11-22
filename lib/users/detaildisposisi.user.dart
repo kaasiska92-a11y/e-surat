@@ -31,7 +31,7 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
   String? jabatan;
   String? nama;
   String? catatan;
-  bool sudahDisposisi = false; // <-- Tambahan utama
+  bool sudahDisposisi = false; 
 
   @override
   void initState() {
@@ -39,7 +39,6 @@ class _DetailDisposisiUserState extends State<DetailDisposisiUser> {
     _getDisposisiData();
   }
 
-  // 🔹 Ambil data disposisi berdasarkan nomor surat
   Future<void> _getDisposisiData() async {
     try {
       final disposisiQuery =
